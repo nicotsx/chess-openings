@@ -1,11 +1,11 @@
 import { Route, Routes } from 'react-router';
 import './App.css';
-import { Trainer } from './pages/trainer';
+import { ChessOpeningTrainer } from './pages/trainer';
 
 function App() {
   return (
     <Routes>
-      <Route index element={<Trainer />} />
+      <Route index element={<ChessOpeningTrainer />} />
     </Routes>
   );
 }
