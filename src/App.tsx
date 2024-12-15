@@ -10,5 +10,4 @@ function App() {
   );
 }
 
-// biome-ignore lint/style/noDefaultExport: Needed for entry point
 export default App;

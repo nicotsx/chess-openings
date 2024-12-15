@@ -44,9 +44,6 @@
         }
       },
       "style": {
-        "noDefaultExport": {
-          "level": "warn"
-        },
         "noNegationElse": {
           "level": "warn"
         },
