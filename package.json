@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint:ci": "biome ci . --changed --error-on-warnings --no-errors-on-unmatched",
+    "lint": "biome check",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -15,16 +16,12 @@
     "react-router": "^7.0.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
+    "@biomejs/biome": "^1.9.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "eslint": "^9.15.0",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.12.0",
     "typescript": "~5.6.2",
-    "typescript-eslint": "^8.15.0",
     "vite": "^6.0.1"
   }
 }
