@@ -72,6 +72,17 @@ export const ChessOpeningTrainer = () => {
     }, 500);
   };
 
+  const highlightPossibleMove = (square: Square) => {
+    const moves = game.moves({ square, verbose: true }); // Get all possible moves from the square
+
+    const highlights: Record<Square, { backgroundColor: string }> = {};
+    for (let i = 0; i < moves.length; i++) {
+      const move = moves[i];
+      highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.5)' }; // Highlight possible target squares
+    }
+
+    setHighlightSquares(highlights);
+  };
   const highlightCorrectMove = () => {
     const currentLine = OPENING_LINES[currentOpening];
     let correctMove = currentLine[currentMoveIndex];
@@ -169,7 +180,13 @@ export const ChessOpeningTrainer = () => {
             <Label htmlFor="game-mode">Mode: {gameMode}</Label>
           </div>
           <div className="w-full max-w-[500px] mx-auto">
-            <Chessboard position={game.fen()} onPieceDrop={onDrop} boardOrientation="white" customSquareStyles={highlightSquares} />
+            <Chessboard
+              position={game.fen()}
+              onPieceDrop={onDrop}
+              onSquareClick={(square) => highlightPossibleMove(square)} // Add this handler
+              boardOrientation="white"
+              customSquareStyles={highlightSquares}
+            />
           </div>
         </div>
         <div className="flex flex-col justify-center">
