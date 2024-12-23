@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint:ci": "biome ci . --changed --error-on-warnings --no-errors-on-unmatched",
     "lint": "biome check",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "type-check": "tsc"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.1",
