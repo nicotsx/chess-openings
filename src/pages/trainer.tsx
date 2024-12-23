@@ -14,7 +14,7 @@ type GameMode = 'Bust' | 'Explore';
 export const ChessOpeningTrainer = () => {
   const [game, setGame] = useState(new Chess());
   const [currentOpening, setCurrentOpening] = useState<Opening>('Ruy Lopez');
-  const [message, setMessage] = useState({ type: '', content: '' });
+  const [message, setMessage] = useState({ type: 'info', content: 'Click on a piece and then click on a square to make a move.' });
   const [highlightSquares, setHighlightSquares] = useState({});
   const [gameMode, setGameMode] = useState<GameMode>('Bust');
   const [isProcessingMove, setIsProcessingMove] = useState(false);
@@ -130,22 +130,22 @@ export const ChessOpeningTrainer = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container px-8 flex flex-col items-center justify-center m-auto">
       <h1 className="text-3xl font-bold mb-4">Advanced Chess Opening Trainer</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 border border-gray-200 p-4 rounded-lg">
+        <Select onValueChange={(o) => setCurrentOpening(o as Opening)} value={currentOpening}>
+          <SelectTrigger className="w-full mb-4">
+            <SelectValue placeholder="Select an opening" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.keys(OPENING_LINES).map((opening) => (
+              <SelectItem key={opening} value={opening}>
+                {opening}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div>
-          <Select onValueChange={(o) => setCurrentOpening(o as Opening)} value={currentOpening}>
-            <SelectTrigger className="w-full mb-4">
-              <SelectValue placeholder="Select an opening" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.keys(OPENING_LINES).map((opening) => (
-                <SelectItem key={opening} value={opening}>
-                  {opening}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <div className="flex items-center space-x-2 mb-4">
             <Switch id="game-mode" checked={gameMode === 'Explore'} onCheckedChange={(checked) => setGameMode(checked ? 'Explore' : 'Bust')} />
             <Label htmlFor="game-mode">Mode: {gameMode}</Label>
@@ -163,7 +163,7 @@ export const ChessOpeningTrainer = () => {
         <div className="flex flex-col justify-center">
           {message.content && (
             <Alert
-              className={`mb-4 ${message.type === 'error' ? 'bg-destructive/15' : message.type === 'success' ? 'bg-primary/15' : 'bg-secondary/15'}`}
+              className={`mb-4 rounded-t-none ${message.type === 'error' ? 'bg-destructive/15' : message.type === 'success' ? 'bg-green-200' : 'bg-secondary/15'}`}
             >
               {message.type === 'error' ? (
                 <AlertCircle className="h-4 w-4" />
@@ -179,9 +179,6 @@ export const ChessOpeningTrainer = () => {
           <Button onClick={resetGame} className="mb-4">
             Reset Game
           </Button>
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Current Opening: {currentOpening}</h2>
-          </div>
         </div>
       </div>
     </div>
