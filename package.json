@@ -31,7 +31,7 @@
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.1",
+    "@types/react-dom": "^19.0.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "globals": "^15.14.0",
