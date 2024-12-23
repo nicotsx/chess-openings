@@ -3,124 +3,96 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { OPENING_LINES, type Opening } from '@/lib/chess';
+import { OPENING_LINES, type Opening } from '@/lib/lines';
 import { Chess, type Square } from 'chess.js';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 
 type GameMode = 'Bust' | 'Explore';
 
 export const ChessOpeningTrainer = () => {
   const [game, setGame] = useState(new Chess());
-  const [currentOpening, setCurrentOpening] = useState<Opening>('Ruy Lopez (Main Line)');
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+  const [currentOpening, setCurrentOpening] = useState<Opening>('Ruy Lopez');
   const [message, setMessage] = useState({ type: '', content: '' });
   const [highlightSquares, setHighlightSquares] = useState({});
   const [gameMode, setGameMode] = useState<GameMode>('Bust');
   const [isProcessingMove, setIsProcessingMove] = useState(false);
-  const [lastCorrectFen, setLastCorrectFen] = useState('');
 
   const resetGame = useCallback(() => {
     const newGame = new Chess();
     setGame(newGame);
-    setCurrentMoveIndex(0);
-    setMessage({ type: '', content: '' });
     setHighlightSquares({});
     setIsProcessingMove(false);
-    setLastCorrectFen('');
   }, []);
-
-  useEffect(() => {
-    resetGame();
-  }, [resetGame]);
-
-  useEffect(() => {
-    if (currentOpening && currentMoveIndex < OPENING_LINES[currentOpening].length && !isProcessingMove) {
-      const isPlayerTurn = currentMoveIndex % 2 === 0;
-      if (!isPlayerTurn) {
-        makeOpponentMove();
-      }
-    }
-  }, [currentOpening, currentMoveIndex, isProcessingMove]);
 
   const makeMove = useCallback(
     (move: { from: Square; to: Square; promotion?: 'q' | 'r' | 'b' | 'n' } | string) => {
-      const gameCopy = new Chess(game.fen());
-      const result = gameCopy.move(move);
-      setGame(gameCopy);
+      const result = game.move(move);
       return result;
     },
     [game],
   );
 
   const makeOpponentMove = () => {
+    const currentFen = game.fen();
     const currentLine = OPENING_LINES[currentOpening];
-    let opponentMove = currentLine[currentMoveIndex];
-
-    if (Array.isArray(opponentMove)) {
-      opponentMove = opponentMove[Math.floor(Math.random() * opponentMove.length)];
-    }
+    const opponentMove = currentLine.getRandomMove(currentFen);
 
     setIsProcessingMove(true);
+
+    if (!opponentMove) {
+      setMessage({ type: 'success', content: 'You have successfully completed the opening line!' });
+      return resetGame();
+    }
+
     setTimeout(() => {
-      const move = makeMove(opponentMove as string);
-      setCurrentMoveIndex((prevIndex) => prevIndex + 1);
+      const move = makeMove(opponentMove);
       setMessage({ type: 'info', content: `Opponent played: ${move.san}` });
-      setLastCorrectFen(game.fen());
       setIsProcessingMove(false);
     }, 500);
   };
 
   const highlightPossibleMove = (square: Square) => {
-    const moves = game.moves({ square, verbose: true }); // Get all possible moves from the square
+    const moves = game.moves({ square, verbose: true });
 
     const highlights: { [K in Square]?: { backgroundColor: string } } = {};
-    for (let i = 0; i < moves.length; i++) {
-      const move = moves[i];
 
-      if (move?.to) {
-        highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.5)' }; // Highlight possible target squares
-      }
+    for (const move of moves) {
+      highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.3)' };
     }
 
     setHighlightSquares(highlights);
   };
-  const highlightCorrectMove = () => {
+
+  const highlightCorrectMove = (fen: string) => {
     const currentLine = OPENING_LINES[currentOpening];
-    let correctMove = currentLine[currentMoveIndex];
+    const correctMove = currentLine.getNextMoves(fen)[0];
 
-    if (Array.isArray(correctMove)) {
-      correctMove = correctMove[0]; // Highlight the first variant as correct
+    if (correctMove) {
+      const currentFen = game.fen();
+      game.undo();
+      const move = game.move(correctMove, { strict: true });
+      game.load(currentFen);
+      setHighlightSquares({
+        [move.from]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' },
+        [move.to]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' },
+      });
     }
-
-    const move = game.move(correctMove as string);
-    game.undo(); // Undo the move to keep the game state correct
-    setHighlightSquares({
-      [move.from]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' },
-      [move.to]: { backgroundColor: 'rgba(255, 255, 0, 0.5)' },
-    });
   };
 
-  const handleMistake = () => {
+  const handleMistake = (previousFen: string) => {
     setMessage({ type: 'error', content: 'Mistake! That move is not part of the opening line.' });
-    highlightCorrectMove();
-
+    highlightCorrectMove(previousFen);
     setIsProcessingMove(true);
+
     if (gameMode === 'Bust') {
       setTimeout(resetGame, 1500);
     } else {
       // Explore mode
       setTimeout(() => {
-        if (lastCorrectFen) {
-          const gameCopy = new Chess(lastCorrectFen);
-          setGame(gameCopy);
-          setCurrentMoveIndex((prevIndex) => prevIndex - 1); // Reset the move index
-        } else {
-          const gameCopy = new Chess(game.fen());
-          gameCopy.undo();
-          setGame(gameCopy);
-        }
+        const gameCopy = new Chess(previousFen);
+        setGame(gameCopy);
         setHighlightSquares({});
         setMessage({ type: 'info', content: "Let's try that move again." });
         setIsProcessingMove(false);
@@ -129,10 +101,11 @@ export const ChessOpeningTrainer = () => {
   };
 
   const onDrop = (sourceSquare: Square, targetSquare: Square) => {
+    const currentFen = game.fen();
+
     if (isProcessingMove) return false;
 
     const currentLine = OPENING_LINES[currentOpening];
-    if (!currentLine || currentMoveIndex >= currentLine.length) return false;
 
     const move = makeMove({
       from: sourceSquare,
@@ -142,21 +115,16 @@ export const ChessOpeningTrainer = () => {
 
     if (move === null) return false;
 
-    const correctMove = currentLine[currentMoveIndex];
-    if (Array.isArray(correctMove)) {
-      if (!correctMove.includes(move.san)) {
-        handleMistake();
-        return true;
-      }
-    } else if (move.san !== correctMove) {
-      handleMistake();
+    const correctMoves = currentLine.getNextMoves(currentFen);
+
+    if (!correctMoves.includes(move.san)) {
+      handleMistake(move.before);
       return true;
     }
 
     setHighlightSquares({});
-    setCurrentMoveIndex((prevIndex) => prevIndex + 1);
     setMessage({ type: 'success', content: 'Correct move!' });
-    setLastCorrectFen(game.fen());
+    makeOpponentMove();
 
     return true;
   };
@@ -186,7 +154,7 @@ export const ChessOpeningTrainer = () => {
             <Chessboard
               position={game.fen()}
               onPieceDrop={onDrop}
-              onSquareClick={(square) => highlightPossibleMove(square)} // Add this handler
+              onSquareClick={(square) => highlightPossibleMove(square)}
               boardOrientation="white"
               customSquareStyles={highlightSquares}
             />
@@ -211,15 +179,9 @@ export const ChessOpeningTrainer = () => {
           <Button onClick={resetGame} className="mb-4">
             Reset Game
           </Button>
-          {currentOpening && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Current Opening: {currentOpening}</h2>
-              <p className="mb-2">
-                Progress: {currentMoveIndex} / {OPENING_LINES[currentOpening].length} moves
-              </p>
-              <p>Next move: {currentMoveIndex % 2 === 0 ? 'Your turn' : "Opponent's turn"}</p>
-            </div>
-          )}
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Current Opening: {currentOpening}</h2>
+          </div>
         </div>
       </div>
     </div>
