@@ -75,10 +75,13 @@ export const ChessOpeningTrainer = () => {
   const highlightPossibleMove = (square: Square) => {
     const moves = game.moves({ square, verbose: true }); // Get all possible moves from the square
 
-    const highlights: Record<Square, { backgroundColor: string }> = {};
+    const highlights: { [K in Square]?: { backgroundColor: string } } = {};
     for (let i = 0; i < moves.length; i++) {
       const move = moves[i];
-      highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.5)' }; // Highlight possible target squares
+
+      if (move?.to) {
+        highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.5)' }; // Highlight possible target squares
+      }
     }
 
     setHighlightSquares(highlights);
