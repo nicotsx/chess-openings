@@ -20,6 +20,7 @@ export const ChessOpeningTrainer = () => {
   const [gameMode, setGameMode] = useState<GameMode>('Bust');
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [lastCorrectFen, setLastCorrectFen] = useState('');
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
 
   const resetGame = useCallback(() => {
     const newGame = new Chess();
@@ -75,6 +76,12 @@ export const ChessOpeningTrainer = () => {
   const highlightPossibleMove = (square: Square) => {
     const moves = game.moves({ square, verbose: true }); // Get all possible moves from the square
 
+    if (moves.length === 0) {
+      setHighlightSquares({});
+      setSelectedSquare(null); // Clear selection if no moves are available
+      return;
+    }
+
     const highlights: Record<Square, { backgroundColor: string }> = {};
     for (let i = 0; i < moves.length; i++) {
       const move = moves[i];
@@ -82,6 +89,24 @@ export const ChessOpeningTrainer = () => {
     }
 
     setHighlightSquares(highlights);
+    setSelectedSquare(square); // Track the selected square
+  };
+
+  const handleSquareClick = (square: Square) => {
+    if (selectedSquare && highlightSquares[square]) {
+      // If a piece is selected and the clicked square is a valid move, make the move
+      const move = makeMove({ from: selectedSquare, to: square, promotion: 'q' }); // Promote to queen if necessary
+      if (move) {
+        setHighlightSquares({});
+        setSelectedSquare(null);
+        setCurrentMoveIndex((prevIndex) => prevIndex + 1);
+        setMessage({ type: 'success', content: 'Move made!' });
+        return;
+      }
+    }
+
+    // If no valid move is made, attempt to highlight possible moves for the new square
+    highlightPossibleMove(square);
   };
   const highlightCorrectMove = () => {
     const currentLine = OPENING_LINES[currentOpening];
@@ -182,8 +207,7 @@ export const ChessOpeningTrainer = () => {
           <div className="w-full max-w-[500px] mx-auto">
             <Chessboard
               position={game.fen()}
-              onPieceDrop={onDrop}
-              onSquareClick={(square) => highlightPossibleMove(square)} // Add this handler
+              onSquareClick={handleSquareClick} // Use the new handler
               boardOrientation="white"
               customSquareStyles={highlightSquares}
             />
