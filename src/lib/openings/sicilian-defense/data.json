@@ -1,0 +1,24 @@
+{
+  "lines": [
+    {
+      "name": "Najdorf Variation",
+      "moves": ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "a6"]
+    },
+    {
+      "name": "Dragon Variation",
+      "moves": ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "g6"]
+    },
+    {
+      "name": "Scheveningen Variation",
+      "moves": ["e4", "c5", "Nf3", "d6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "e6"]
+    },
+    {
+      "name": "Sveshnikov Variation",
+      "moves": ["e4", "c5", "Nf3", "Nc6", "d4", "cxd4", "Nxd4", "Nf6", "Nc3", "e5"]
+    },
+    {
+      "name": "Accelerated Dragon",
+      "moves": ["e4", "c5", "Nf3", "Nc6", "d4", "cxd4", "Nxd4", "g6"]
+    }
+  ]
+}
