@@ -1,5 +1,7 @@
 import { Chess } from 'chess.js';
 
+export type Line = { name: string; moves: string[] };
+
 /**
  * Represents a single node (position) in the DAG.
  */
@@ -19,20 +21,22 @@ class DAGNode {
 class ChessOpeningDAG {
   nodes: Record<string, DAGNode>;
   chess: Chess;
+  fenToLineName: Record<string, string>;
 
   constructor() {
     this.nodes = {};
-
+    this.fenToLineName = {};
     this.chess = new Chess();
     const startFen = this.chess.fen();
 
     // Create the root node if not present
     this.nodes[startFen] = new DAGNode(startFen);
+    this.fenToLineName[startFen] = 'Root';
   }
 
-  addLines(lines: string[][]) {
+  addLines(lines: Line[]) {
     for (const line of lines) {
-      this.addLine(line);
+      this.addLine(line.moves, line.name);
     }
   }
 
@@ -40,7 +44,7 @@ class ChessOpeningDAG {
    * Add a single line (array of moves) to the DAG.
    * example: ["e4", "e5", "Nf3", "Nc6", "Bb5", ...]
    */
-  addLine(movesArray: string[]) {
+  addLine(movesArray: string[], lineName: string) {
     this.chess.reset();
     let currentFen = this.chess.fen();
 
@@ -48,10 +52,10 @@ class ChessOpeningDAG {
       this.nodes[currentFen] = new DAGNode(currentFen);
     }
 
-    for (const moveStr of movesArray) {
-      const moveResult = this.chess.move(moveStr);
+    for (const move of movesArray) {
+      const moveResult = this.chess.move(move);
       if (!moveResult) {
-        throw new Error(`Invalid move '${moveStr}' from FEN: ${currentFen}`);
+        throw new Error(`Invalid move '${move}' from FEN: ${currentFen}`);
       }
 
       const childFen = this.chess.fen();
@@ -63,7 +67,12 @@ class ChessOpeningDAG {
       // Link currentFen -> childFen via moveStr
       const node = this.nodes[currentFen];
       if (node) {
-        node.moves[moveStr] = childFen;
+        node.moves[move] = childFen;
+      }
+
+      // Assign the line name to the FEN if it doesn't already have one
+      if (!this.fenToLineName[childFen]) {
+        this.fenToLineName[childFen] = lineName;
       }
 
       currentFen = childFen;
@@ -89,6 +98,13 @@ class ChessOpeningDAG {
     if (moves.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * moves.length);
     return moves[randomIndex];
+  }
+
+  /**
+   * Get the name of the current line based on the sequence of moves.
+   */
+  getCurrentLineName(fen: string) {
+    return this.fenToLineName[fen];
   }
 }
 

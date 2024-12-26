@@ -3,47 +3,62 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { OPENING_LINES, type Opening } from '@/lib/lines';
+import type ChessOpening from '@/lib/chess-opening';
+import { OPENINGS } from '@/lib/openings';
+import { RuyLopez } from '@/lib/openings/ruy-lopez/ruy-lopez';
 import { Chess, type Square } from 'chess.js';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 
 type GameMode = 'Bust' | 'Explore';
 
 export const ChessOpeningTrainer = () => {
-  const [game, setGame] = useState(new Chess());
-  const [currentOpening, setCurrentOpening] = useState<Opening>('Ruy Lopez');
+  const [game] = useState(new Chess());
+  const [currentOpening, setCurrentOpening] = useState<ChessOpening>(RuyLopez);
   const [message, setMessage] = useState({ type: 'info', content: 'Click on a piece and then click on a square to make a move.' });
   const [highlightSquares, setHighlightSquares] = useState({});
-  const [gameMode, setGameMode] = useState<GameMode>('Bust');
+  const [gameMode, setGameMode] = useState<GameMode>('Explore');
   const [isProcessingMove, setIsProcessingMove] = useState(false);
+  const [variationName, setVariationName] = useState<string | undefined>();
 
-  const resetGame = useCallback(() => {
-    const newGame = new Chess();
-    setGame(newGame);
+  const resetGame = (opening: ChessOpening) => {
+    game.reset();
+
     setHighlightSquares({});
-    setIsProcessingMove(false);
-  }, []);
+    setMessage({ type: 'info', content: 'Click on a piece and then click on a square to make a move.' });
+    setVariationName('');
 
-  const makeMove = useCallback(
-    (move: { from: Square; to: Square; promotion?: 'q' | 'r' | 'b' | 'n' } | string) => {
-      const result = game.move(move);
-      return result;
-    },
-    [game],
-  );
+    if (opening.playerColor === 'black') {
+      makeOpponentMove();
+    } else {
+      setIsProcessingMove(false);
+    }
+  };
+
+  const makeMove = (move: { from: Square; to: Square; promotion?: 'q' | 'r' | 'b' | 'n' } | string) => {
+    const result = game.move(move);
+
+    if (game.moveNumber() >= 5) {
+      const variation = currentOpening.dag.getCurrentLineName(game.fen());
+
+      if (variation) {
+        setVariationName(variation);
+      }
+    }
+
+    return result;
+  };
 
   const makeOpponentMove = () => {
     const currentFen = game.fen();
-    const currentLine = OPENING_LINES[currentOpening];
-    const opponentMove = currentLine.getRandomMove(currentFen);
+    const opponentMove = currentOpening.getRandomMove(currentFen);
 
     setIsProcessingMove(true);
 
     if (!opponentMove) {
       setMessage({ type: 'success', content: 'You have successfully completed the opening line!' });
-      return resetGame();
+      return resetGame(currentOpening);
     }
 
     setTimeout(() => {
@@ -66,8 +81,7 @@ export const ChessOpeningTrainer = () => {
   };
 
   const highlightCorrectMove = (fen: string) => {
-    const currentLine = OPENING_LINES[currentOpening];
-    const correctMove = currentLine.getNextMoves(fen)[0];
+    const correctMove = currentOpening.getNextMoves(fen)[0];
 
     if (correctMove) {
       const currentFen = game.fen();
@@ -91,8 +105,7 @@ export const ChessOpeningTrainer = () => {
     } else {
       // Explore mode
       setTimeout(() => {
-        const gameCopy = new Chess(previousFen);
-        setGame(gameCopy);
+        game.load(previousFen);
         setHighlightSquares({});
         setMessage({ type: 'info', content: "Let's try that move again." });
         setIsProcessingMove(false);
@@ -105,8 +118,6 @@ export const ChessOpeningTrainer = () => {
 
     if (isProcessingMove) return false;
 
-    const currentLine = OPENING_LINES[currentOpening];
-
     const move = makeMove({
       from: sourceSquare,
       to: targetSquare,
@@ -115,7 +126,7 @@ export const ChessOpeningTrainer = () => {
 
     if (move === null) return false;
 
-    const correctMoves = currentLine.getNextMoves(currentFen);
+    const correctMoves = currentOpening.getNextMoves(currentFen);
 
     if (!correctMoves.includes(move.san)) {
       handleMistake(move.before);
@@ -129,18 +140,26 @@ export const ChessOpeningTrainer = () => {
     return true;
   };
 
+  const handleSelectOpening = (opening: string) => {
+    const selectedOpening = OPENINGS.find((o) => o.name === opening);
+    if (selectedOpening) {
+      setCurrentOpening(selectedOpening);
+      resetGame(selectedOpening);
+    }
+  };
+
   return (
     <div className="container px-8 flex flex-col items-center justify-center m-auto">
       <h1 className="text-3xl font-bold mb-4">Advanced Chess Opening Trainer</h1>
       <div className="grid grid-cols-1 border border-gray-200 p-4 rounded-lg">
-        <Select onValueChange={(o) => setCurrentOpening(o as Opening)} value={currentOpening}>
+        <Select onValueChange={handleSelectOpening} value={currentOpening.name}>
           <SelectTrigger className="w-full mb-4">
             <SelectValue placeholder="Select an opening" />
           </SelectTrigger>
           <SelectContent>
-            {Object.keys(OPENING_LINES).map((opening) => (
-              <SelectItem key={opening} value={opening}>
-                {opening}
+            {OPENINGS.map((opening) => (
+              <SelectItem key={opening.name} value={opening.name}>
+                {opening.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -155,7 +174,7 @@ export const ChessOpeningTrainer = () => {
               position={game.fen()}
               onPieceDrop={onDrop}
               onSquareClick={(square) => highlightPossibleMove(square)}
-              boardOrientation="white"
+              boardOrientation={currentOpening.playerColor}
               customSquareStyles={highlightSquares}
             />
           </div>
@@ -176,9 +195,12 @@ export const ChessOpeningTrainer = () => {
               <AlertDescription>{message.content}</AlertDescription>
             </Alert>
           )}
-          <Button onClick={resetGame} className="mb-4">
+          <Button onClick={() => resetGame(currentOpening)} className="mb-4">
             Reset Game
           </Button>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span>Variation: {variationName ?? 'Main Line'}</span>
         </div>
       </div>
     </div>
