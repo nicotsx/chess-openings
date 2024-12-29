@@ -22,6 +22,7 @@ export const ChessOpeningTrainer = () => {
   const [gameMode, setGameMode] = useState<GameMode>('Explore');
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [variationName, setVariationName] = useState<string | undefined>();
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
 
   const resetGame = (opening: ChessOpening) => {
     game.reset();
@@ -76,17 +77,21 @@ export const ChessOpeningTrainer = () => {
       }
     }, 500);
   };
-
   const highlightPossibleMove = (square: Square) => {
     const moves = game.moves({ square, verbose: true });
 
-    const highlights: { [K in Square]?: { backgroundColor: string } } = {};
+    if (moves.length > 0) {
+      setSelectedSquare(square);
 
-    for (const move of moves) {
-      highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.3)' };
+      const highlights: { [K in Square]?: { backgroundColor: string } } = {};
+      for (const move of moves) {
+        highlights[move.to] = { backgroundColor: 'rgba(0, 255, 0, 0.3)' };
+      }
+      setHighlightSquares(highlights);
+    } else {
+      setSelectedSquare(null);
+      setHighlightSquares({});
     }
-
-    setHighlightSquares(highlights);
   };
 
   const highlightCorrectMove = (fen: string) => {
@@ -123,6 +128,32 @@ export const ChessOpeningTrainer = () => {
         setMessage({ type: 'info', content: "Let's try that move again." });
         setIsProcessingMove(false);
       }, 1500);
+    }
+  };
+  const handleSquareClick = (square: Square) => {
+    const currentFen = game.fen();
+    if (isProcessingMove) return false;
+
+    if (selectedSquare && highlightSquares[square]) {
+      const moveResult = makeMove({
+        from: selectedSquare,
+        to: square,
+        promotion: 'q',
+      });
+
+      if (moveResult === null) return;
+
+      const correctMoves = currentOpening.getNextMoves(currentFen);
+      if (correctMoves.includes(moveResult.san)) {
+        setMessage({ type: 'success', content: 'Correct move!' });
+        makeOpponentMove();
+      } else {
+        handleMistake(moveResult.before);
+      }
+      setSelectedSquare(null);
+      setHighlightSquares({});
+    } else {
+      highlightPossibleMove(square);
     }
   };
 
@@ -199,7 +230,7 @@ export const ChessOpeningTrainer = () => {
               customArrows={arrows}
               position={game.fen()}
               onPieceDrop={onDrop}
-              onSquareClick={(square) => highlightPossibleMove(square)}
+              onSquareClick={handleSquareClick}
               boardOrientation={currentOpening.playerColor}
               customSquareStyles={highlightSquares}
             />
