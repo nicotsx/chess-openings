@@ -130,26 +130,52 @@ export const ChessOpeningTrainer = () => {
       }, 1500);
     }
   };
+
+  const handleMove = (
+    moveDetails: { from: Square; to: Square; promotion?: 'q' | 'r' | 'b' | 'n' } | string,
+    currentFen: string,
+    isDragDrop = false,
+  ) => {
+    if (isProcessingMove) return isDragDrop ? false : undefined;
+
+    const moveResult = makeMove(moveDetails);
+
+    if (moveResult === null) return isDragDrop ? false : undefined;
+
+    const correctMoves = currentOpening.getNextMoves(currentFen);
+
+    if (!correctMoves.includes(moveResult.san)) {
+      handleMistake(moveResult.before);
+      return isDragDrop ? true : undefined;
+    }
+
+    if (isDragDrop) {
+      correctMoves.splice(correctMoves.indexOf(moveResult.san), 1);
+
+      if (correctMoves.length) {
+        const arrows: [Square, Square, string][] = [];
+        for (const correctMove of correctMoves) {
+          const fakeGame = new Chess(currentFen);
+          const moveResult = fakeGame.move(correctMove);
+          arrows.push([moveResult?.from, moveResult?.to, 'lightblue']);
+        }
+
+        setArrows(arrows);
+      }
+    }
+
+    setMessage({ type: 'success', content: 'Correct move!' });
+    makeOpponentMove();
+
+    return isDragDrop ? true : undefined;
+  };
+
   const handleSquareClick = (square: Square) => {
     const currentFen = game.fen();
-    if (isProcessingMove) return false;
 
     if (selectedSquare && highlightSquares[square]) {
-      const moveResult = makeMove({
-        from: selectedSquare,
-        to: square,
-        promotion: 'q',
-      });
+      handleMove({ from: selectedSquare, to: square, promotion: 'q' }, currentFen);
 
-      if (moveResult === null) return;
-
-      const correctMoves = currentOpening.getNextMoves(currentFen);
-      if (correctMoves.includes(moveResult.san)) {
-        setMessage({ type: 'success', content: 'Correct move!' });
-        makeOpponentMove();
-      } else {
-        handleMistake(moveResult.before);
-      }
       setSelectedSquare(null);
       setHighlightSquares({});
     } else {
@@ -160,39 +186,7 @@ export const ChessOpeningTrainer = () => {
   const onDrop = (sourceSquare: Square, targetSquare: Square) => {
     const currentFen = game.fen();
 
-    if (isProcessingMove) return false;
-
-    const move = makeMove({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: 'q', // always promote to queen for simplicity
-    });
-
-    if (move === null) return false;
-
-    const correctMoves = currentOpening.getNextMoves(currentFen);
-
-    if (!correctMoves.includes(move.san)) {
-      handleMistake(move.before);
-      return true;
-    }
-
-    correctMoves.splice(correctMoves.indexOf(move.san), 1);
-
-    if (correctMoves.length) {
-      const arrows: [Square, Square, string][] = [];
-      for (const correctMove of correctMoves) {
-        const fakeGame = new Chess(currentFen);
-        const moveResult = fakeGame.move(correctMove);
-        arrows.push([moveResult?.from, moveResult?.to, 'lightblue']);
-      }
-
-      setArrows(arrows);
-    }
-
-    setMessage({ type: 'success', content: 'Correct move!' });
-    makeOpponentMove();
-
+    handleMove({ from: sourceSquare, to: targetSquare, promotion: 'q' }, currentFen, true);
     return true;
   };
 
