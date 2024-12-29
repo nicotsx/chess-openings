@@ -17,7 +17,7 @@ export const ChessOpeningTrainer = () => {
   const [game] = useState(new Chess());
   const [currentOpening, setCurrentOpening] = useState<ChessOpening>(RuyLopez);
   const [message, setMessage] = useState({ type: 'info', content: 'Click on a piece and then click on a square to make a move.' });
-  const [highlightSquares, setHighlightSquares] = useState({});
+  const [highlightSquares, setHighlightSquares] = useState<{ [K in Square]?: { backgroundColor: string } }>({});
   const [arrows, setArrows] = useState<[Square, Square, string][]>([]);
   const [gameMode, setGameMode] = useState<GameMode>('Explore');
   const [isProcessingMove, setIsProcessingMove] = useState(false);
