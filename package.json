@@ -19,26 +19,26 @@
     "chess.js": "1.0.0-beta.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.469.0",
+    "lucide-react": "^0.471.1",
     "react": "^19.0.0",
     "react-chessboard": "^4.7.2",
     "react-dom": "^19.0.0",
-    "react-router": "^7.1.1",
+    "react-router": "^7.1.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.0.2",
-    "@types/react-dom": "^19.0.2",
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "globals": "^15.14.0",
-    "lefthook": "^1.10.1",
-    "postcss": "^8.4.49",
+    "lefthook": "^1.10.8",
+    "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "~5.7.2",
-    "vite": "^6.0.6"
+    "typescript": "~5.7.3",
+    "vite": "^6.0.7"
   }
 }
